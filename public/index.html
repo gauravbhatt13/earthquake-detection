@@ -1,0 +1,114 @@
+<html>
+<head>
+    <title>CCTV Capture</title>
+    <style>
+        #video1 {
+            width: 320px
+        }
+
+        canvas {
+            margin-right: 20px;
+        }
+
+        .earthquake {
+            border: 5px solid red;
+        }
+
+        .normal {
+            border: 5px solid black;
+        }
+    </style>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+          integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+
+    <!--<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
+            crossorigin="anonymous"></script>-->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
+            integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
+            integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.7.2/angular.min.js"></script>
+    <script>
+        var app = angular.module('earthquake', []);
+        app.controller('ctrl', function ($http) {
+
+        });
+    </script>
+</head>
+<body class="container" ng-app="earthquake" ng-controller="ctrl">
+<div class="row mt-5">
+    <div class="col-md-8">
+        <video id="video" src="videoplayback.mp4" autoplay class="normal"></video>
+        <h3 class="mt-3">CCTV FOOTAGE</h3>
+    </div>
+</div>
+
+<div id="thumbs">
+
+</div>
+<script>
+    var i = 0;
+    var video = document.getElementById("video");
+    var thumbs = document.getElementById("thumbs");
+
+    video.addEventListener('loadeddata', function () {
+        thumbs.innerHTML = "";
+        video.currentTime = i;
+    }, false);
+
+    video.addEventListener('seeked', function () {
+        console.log('seeked');
+        // now video has seeked and current frames will show
+        // at the time as we expect
+        generateThumbnail();
+
+        // when frame is captured, increase
+        i = i+.3;// if we are not passed end, seek to next interval
+        if (i <= video.duration) {
+            // this will trigger another seeked event
+            video.currentTime = i;
+        }
+        else {
+            // DONE!, next action
+            video.pause;
+            video.className = 'earthquake';
+            alert("earth quake detected!")
+        }
+
+    }, false);
+
+
+    function generateThumbnail() {
+        var c = document.createElement("canvas");
+        var ctx = c.getContext("2d");
+        c.style.visibility = 'hidden';
+        c.width = 130;
+        c.height = 70;
+        ctx.drawImage(video, 0, 0, 130, 70);
+
+        var imgData = c.toDataURL();
+        $.ajax({
+            type: "POST",
+            url: 'http://localhost:3000/',
+            data: {
+                imgBase64: imgData
+            }
+        }).done(function (response) {
+            if (JSON.stringify(response).includes('earthquake')) {
+                console.log('earthquake detected');
+                i = video.duration + 1000;
+            } else {
+                video.className = 'normal';
+            }
+        });
+
+
+        if (thumbs.childNodes.length == 5) {
+            thumbs.innerHTML = '';
+        }
+        thumbs.appendChild(c);
+    }
+</script>
+</body>
+</html>
